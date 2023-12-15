@@ -16,6 +16,9 @@
   "workbench.editorAssociations": {
     "*.db": "sqlite-viewer.view"
   },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+  },
   "workbench.colorCustomizations": {
     "commandCenter.border": "#15202b99",
     "sash.hoverBorder": "#fbed80",
