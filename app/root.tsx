@@ -24,6 +24,7 @@ import {
 } from '@remix-run/react'
 import { withSentry } from '@sentry/remix'
 import { useRef } from 'react'
+import { IntlProvider } from 'react-intl'
 import { AuthenticityTokenProvider } from 'remix-utils/csrf/react'
 import { HoneypotProvider } from 'remix-utils/honeypot/react'
 import { z } from 'zod'
@@ -86,7 +87,7 @@ export const links: LinksFunction = () => {
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
 	return [
-		{ title: data ? 'Epic Notes' : 'Error | Epic Notes' },
+		{ title: data ? 'Cashy' : 'Error | Cashy' },
 		{ name: 'description', content: `Your own captain's log` },
 	]
 }
@@ -274,7 +275,9 @@ function AppWithProviders() {
 	return (
 		<AuthenticityTokenProvider token={data.csrfToken}>
 			<HoneypotProvider {...data.honeyProps}>
-				<App />
+				<IntlProvider locale="en" defaultLocale="en">
+					<App />
+				</IntlProvider>
 			</HoneypotProvider>
 		</AuthenticityTokenProvider>
 	)

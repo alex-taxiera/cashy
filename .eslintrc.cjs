@@ -36,6 +36,9 @@ module.exports = {
 				],
 			},
 		],
+		'react/style-prop-object': ['warn', {
+			"allow": ['FormattedNumber']
+		}]
 	},
 	overrides: [
 		{

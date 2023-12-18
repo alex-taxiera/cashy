@@ -1,17 +1,32 @@
+import { type PlaidItem } from '@prisma/client'
 import { type DataFunctionArgs, json } from '@remix-run/node'
 import { useFetcher, useLoaderData } from '@remix-run/react'
-import { type AccountType } from 'plaid'
+import { type AccountBase, AccountType } from 'plaid'
 import { useCallback, useMemo } from 'react'
 import {
 	type PlaidLinkOnSuccess,
-	type PlaidLinkOnEvent,
-	type PlaidLinkOnExit,
 	usePlaidLink,
 } from 'react-plaid-link'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
+import { FormattedCurrency } from '#app/components/formatted-currency'
+import { Accordion, AccordionPanel, AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from '#app/components/ui/accordion'
+import { Button } from '#app/components/ui/button'
+import { Icon } from '#app/components/ui/icon'
 import { requireUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server'
-import { products, countryCodes, client, POSITIVE_ACCOUNT_TYPES, NEGATIVE_ACCOUNT_TYPES } from '#app/utils/plaid.server'
+import {
+	products,
+	countryCodes,
+	POSITIVE_ACCOUNT_TYPES,
+	NEGATIVE_ACCOUNT_TYPES,
+	ACCOUNT_TYPE_DISPLAY_NAMES,
+} from '#app/utils/plaid'
+import { client } from '#app/utils/plaid.server'
+
+type CategorizedAccountMap = Record<
+	AccountType,
+	(AccountBase & { item: Pick<PlaidItem, 'id' | 'institution'> })[]
+>
 
 export async function loader({ request }: DataFunctionArgs) {
 	const userId = await requireUserId(request)
@@ -26,160 +41,221 @@ export async function loader({ request }: DataFunctionArgs) {
 		language: 'en',
 	})
 
-  const plaidItems = await prisma.plaidItem.findMany({
-    where: {
-      ownerId: userId,
-    },
-  });
+	const plaidItems = await prisma.plaidItem.findMany({
+		where: {
+			ownerId: userId,
+		},
+	})
 
-  const plaidData = await Promise.all(plaidItems.map(async (item) => {
-    const { data: { accounts } } = await client.accountsGet({
-      access_token: item.accessToken,
-    });
+	const plaidData = await Promise.all(
+		plaidItems.map(async item => {
+			const {
+				data: { accounts },
+			} = await client.accountsGet({
+				access_token: item.accessToken,
+			})
 
-    const summary = accounts.reduce<Record<AccountType | 'net', number>>((acc, account) => {
-      const { type, balances: { available, current } } = account;
-      const value = available ?? current ?? 0
+			return {
+				id: item.id,
+				institution: item.institution,
+				accounts,
+			}
+		}),
+	)
 
-      if (acc[type]) {
-        acc[type] += value
-      } else {
-        acc[type] = value
-      }
+	const categorizedAccounts = plaidData.reduce<CategorizedAccountMap>(
+		(acc, item) => {
+			const { accounts } = item
+			accounts.forEach(account => {
+				const accountWithItem = {
+					...account,
+					item: {
+						id: item.id,
+						institution: item.institution,
+					},
+				}
+				acc[accountWithItem.type].push(accountWithItem)
+			})
 
-      if (POSITIVE_ACCOUNT_TYPES.includes(type)) {
-        acc.net += value
-      } else if (NEGATIVE_ACCOUNT_TYPES.includes(type)) {
-        acc.net -= value
-      }
+			return acc
+		},
+		{
+			credit: [],
+			depository: [],
+			investment: [],
+			loan: [],
+			other: [],
+			brokerage: [],
+		},
+	)
 
-      return acc;
-    }, {
-      credit: 0,
-      depository: 0,
-      investment: 0,
-      loan: 0,
-      other: 0,
-      brokerage: 0,
-      net: 0,
-    })
+	const totalAssets = POSITIVE_ACCOUNT_TYPES.flatMap(
+		type => categorizedAccounts[type],
+	).reduce((acc, account) => {
+		return acc + (account.balances.current ?? 0)
+	}, 0)
 
-    return {
-      id: item.id,
-      institution: item.institution,
-      accounts,
-      summary,
-    }
-  }));
+	const totalDebts = NEGATIVE_ACCOUNT_TYPES.flatMap(
+		type => categorizedAccounts[type],
+	).reduce((acc, account) => {
+		return acc + (account.balances.current ?? 0)
+	}, 0)
 
-  const totals = plaidData.reduce<Record<'net' | 'cash' | 'debt', number>>(
-    (acc, item) => {
-      acc.net += item.summary.net
-      acc.cash += POSITIVE_ACCOUNT_TYPES.reduce((acc, type) => {
-        return acc + (item.summary[type] ?? 0)
-      }, 0)
-      acc.debt += NEGATIVE_ACCOUNT_TYPES.reduce((acc, type) => {
-        return acc + (item.summary[type] ?? 0)
-      }
-      , 0)
-  
-      return acc
-    },
-    {
-      net: 0,
-      cash: 0,
-      debt: 0,
-    },
-  )
+	const totalOther = categorizedAccounts.other.reduce((acc, account) => {
+		return acc + (account.balances.current ?? 0)
+	}, 0)
 
-
-	return json({...createTokenResponse.data, totals, plaidData })
+	return json({
+		linkData: createTokenResponse.data,
+		currencyCode:
+			plaidData[0]?.accounts[0]?.balances.iso_currency_code ?? 'USD',
+		totals: {
+			net: totalAssets - totalDebts,
+			assets: totalAssets,
+			debts: totalDebts,
+			other: totalOther,
+		},
+		categorizedAccounts,
+	})
 }
 
 export default function DashboardRoute() {
-  const data = useLoaderData<typeof loader>()
-  console.log('data :', data)
+	const data = useLoaderData<typeof loader>()
+	console.log('data :', data)
 	return (
-		<main className="container flex h-full min-h-[400px] px-0 pb-12 md:px-8">
-			<div className="flex w-full flex-col gap-8 p-8 md:gap-12">
-				<div className="flex justify-between">
-					<h1 className="text-center text-base font-bold md:text-lg lg:text-left lg:text-2xl">
-						Dashboard
-					</h1>
-					<LinkAccountButton />
-				</div>
-        <div>
-          <h2 className="text-center text-base font-bold md:text-lg lg:text-left lg:text-2xl">
-            Totals
-          </h2>
-          <ul className="flex flex-col gap-2">
-            <li>Net: {data.totals.net}</li>
-            <li>Cash: {data.totals.cash}</li>
-            <li>Debt: {data.totals.debt}</li>
-          </ul>
-        </div>
-				<ul className="flex flex-col gap-8">
-					{data.plaidData.map((item) => (
-						<li key={item.id} className="flex flex-col gap-4">
-							<h3>{item.institution}</h3>
-              <ul className="flex flex-col gap-2 rounded-md bg-muted p-4">
-                {item.accounts.map((account) => (
-                  <li key={account.account_id}>
-                    {account.name} - {account.balances.current}
-                  </li>
-                ))}
-              </ul>
-						</li>
-					))}
-				</ul>
+		<main className="container flex h-full min-h-[400px] max-w-[800px] mx-auto flex-col gap-8 pb-12 md:gap-12">
+			<div className="flex flex-col gap-y-4 font-bold">
+				<span>Net Worth</span>
+				<h1 className="text-5xl">
+					<FormattedCurrency
+						value={data.totals.net}
+						currency={data.currencyCode}
+					/>
+				</h1>
 			</div>
+      <AccountSection type="assets" />
+      <AccountSection type="debts" />
+      <AccountSection type="other" />
 		</main>
+	)
+}
+
+type AccountSectionProps = {
+  type: 'assets' | 'debts' | 'other'
+}
+
+function AccountSection({ type }: AccountSectionProps) {
+  const data = useLoaderData<typeof loader>()
+
+  const accountCategories = type === 'assets' ? POSITIVE_ACCOUNT_TYPES : type === 'debts' ? NEGATIVE_ACCOUNT_TYPES : [AccountType.Other]
+
+  if (type === 'other' && data.categorizedAccounts.other.length === 0) {
+    return null
+  }
+
+  return (
+    <section>
+      <div className="flex justify-between pl-4 mb-4">
+        <div>
+          <h2 className="font-bold text-2xl capitalize">{type}</h2>
+          <span><FormattedCurrency value={data.totals[type]} currency={data.currencyCode} /></span>
+        </div>
+        <LinkAccountButton />
+      </div>
+      <Accordion type="multiple">
+        {accountCategories.map(category => (
+          <AccountCategory key={category} type={category} />
+        ))}
+      </Accordion>
+    </section>
+  )
+}
+
+type AccountCategoryProps = {
+	type: AccountType
+}
+
+function AccountCategory({ type }: AccountCategoryProps) {
+	const data = useLoaderData<typeof loader>()
+	const accounts = data.categorizedAccounts[type]
+
+	if (accounts.length === 0) {
+		return null
+	}
+
+	const total = accounts.reduce((acc, account) => {
+		return acc + (account.balances.current ?? 0)
+	}, 0)
+
+	return (
+		<AccordionItem value={type}>
+			<AccordionHeader className="font-bold">
+        <AccordionTrigger>
+          {ACCOUNT_TYPE_DISPLAY_NAMES[type]}
+          <span>
+            <FormattedCurrency value={total} currency={data.currencyCode} />
+          </span>
+        </AccordionTrigger>
+			</AccordionHeader>
+      <AccordionPanel className="border-secondary border-t">
+        <AccordionContent asChild>
+          <ul className="flex flex-col gap-4">
+            {accounts.map(account => (
+              <li className="flex justify-between text-sm" key={account.account_id}>
+                <div>
+                  <h4 className="font-bold">{account.name}</h4>
+                  <span>{account.item.institution}</span>
+                </div>
+                <div className="font-bold">
+                  <FormattedCurrency value={account.balances.current ?? 0} currency={data.currencyCode} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </AccordionContent>
+      </AccordionPanel>
+		</AccordionItem>
 	)
 }
 
 function LinkAccountButton() {
 	const data = useLoaderData<typeof loader>()
-  const fetcher = useFetcher()
+	const fetcher = useFetcher()
 
-	const onSuccess = useCallback<PlaidLinkOnSuccess>((publicToken, metadata) => {
-    fetcher.submit({
-      public_token: publicToken, 
-      institution: metadata.institution?.name ?? '',
-    }, {
-      action: '/resources/create-plaid-item',
-      method: 'POST',
-    })
-	}, [fetcher])
-	const onEvent = useCallback<PlaidLinkOnEvent>((eventName, metadata) => {
-		// https://plaid.com/docs/link/web/#onevent
-		console.log(eventName, metadata)
-	}, [])
-	const onExit = useCallback<PlaidLinkOnExit>((error, metadata) => {
-		// https://plaid.com/docs/link/web/#onexit
-		console.log(error, metadata)
-	}, [])
+	const onSuccess = useCallback<PlaidLinkOnSuccess>(
+		(publicToken, metadata) => {
+			fetcher.submit(
+				{
+					public_token: publicToken,
+					institution: metadata.institution?.name ?? '',
+				},
+				{
+					action: '/resources/create-plaid-item',
+					method: 'POST',
+				},
+			)
+		},
+		[fetcher],
+	)
 
 	const config = useMemo(
 		() => ({
 			onSuccess,
-			onEvent,
-			onExit,
-			token: data.link_token,
+			token: data.linkData.link_token,
 		}),
-		[data.link_token, onEvent, onExit, onSuccess],
+		[data.linkData.link_token, onSuccess],
 	)
 
 	const {
 		open,
 		ready,
-		// error,
-		// exit
 	} = usePlaidLink(config)
 
 	return (
-		<button className="text-blue-700" onClick={() => open()} disabled={!ready}>
-			Link Account
-		</button>
+		<Button variant="link" onClick={() => open()} disabled={!ready}>
+			<Icon name="plus" className="mr-1" />
+			Link More
+		</Button>
 	)
 }
 

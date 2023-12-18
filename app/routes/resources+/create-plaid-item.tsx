@@ -5,6 +5,7 @@ import { requireUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { requireUserWithPermission } from '#app/utils/permissions'
 import { client } from '#app/utils/plaid.server'
+import { createToastHeaders } from '#app/utils/toast.server'
 
 const CreatePlaidItemSchema = z.object({
   public_token: z.string(),
@@ -41,5 +42,11 @@ export async function action({ request }: DataFunctionArgs) {
     },
   })
 
-  return json(item)
+  const toastHeaders = await createToastHeaders({
+		type: 'success',
+		title: 'Success',
+		description: `You successfully linked ${submission.value.institution}.`,
+	})
+
+  return json(item, { headers: toastHeaders })
 }
