@@ -9,29 +9,6 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Note" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "title" TEXT NOT NULL,
-    "content" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    "ownerId" TEXT NOT NULL,
-    CONSTRAINT "Note_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "NoteImage" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "altText" TEXT,
-    "contentType" TEXT NOT NULL,
-    "blob" BLOB NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    "noteId" TEXT NOT NULL,
-    CONSTRAINT "NoteImage_noteId_fkey" FOREIGN KEY ("noteId") REFERENCES "Note" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- CreateTable
 CREATE TABLE "UserImage" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "altText" TEXT,
@@ -121,20 +98,22 @@ CREATE TABLE "_RoleToUser" (
     CONSTRAINT "_RoleToUser_B_fkey" FOREIGN KEY ("B") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+-- CreateTable
+CREATE TABLE IF NOT EXISTS "PlaidItem" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "accessToken" TEXT NOT NULL,
+    "itemId" TEXT NOT NULL,
+    "institution" TEXT NOT NULL,
+    "ownerId" TEXT NOT NULL,
+    CONSTRAINT "PlaidItem_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
-
--- CreateIndex
-CREATE INDEX "Note_ownerId_idx" ON "Note"("ownerId");
-
--- CreateIndex
-CREATE INDEX "Note_ownerId_updatedAt_idx" ON "Note"("ownerId", "updatedAt");
-
--- CreateIndex
-CREATE INDEX "NoteImage_noteId_idx" ON "NoteImage"("noteId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserImage_userId_key" ON "UserImage"("userId");
@@ -169,43 +148,49 @@ CREATE UNIQUE INDEX "_RoleToUser_AB_unique" ON "_RoleToUser"("A", "B");
 -- CreateIndex
 CREATE INDEX "_RoleToUser_B_index" ON "_RoleToUser"("B");
 
+-- CreateIndex
+CREATE INDEX "PlaidItem_ownerId_idx" ON "PlaidItem"("ownerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PlaidItem_itemId_key" ON "PlaidItem"("itemId");
+
 --------------------------------- Manual Seeding --------------------------
 -- Hey there, Kent here! This is how you can reliably seed your database with
 -- some data. You edit the migration.sql file and that will handle it for you.
 
-INSERT INTO Permission VALUES('clnf2zvli0000pcou3zzzzome','create','user','own','',1696625465526,1696625465526);
-INSERT INTO Permission VALUES('clnf2zvll0001pcouly1310ku','create','user','any','',1696625465529,1696625465529);
-INSERT INTO Permission VALUES('clnf2zvll0002pcouka7348re','read','user','own','',1696625465530,1696625465530);
-INSERT INTO Permission VALUES('clnf2zvlm0003pcouea4dee51','read','user','any','',1696625465530,1696625465530);
-INSERT INTO Permission VALUES('clnf2zvlm0004pcou2guvolx5','update','user','own','',1696625465531,1696625465531);
-INSERT INTO Permission VALUES('clnf2zvln0005pcoun78ps5ap','update','user','any','',1696625465531,1696625465531);
-INSERT INTO Permission VALUES('clnf2zvlo0006pcouyoptc5jp','delete','user','own','',1696625465532,1696625465532);
-INSERT INTO Permission VALUES('clnf2zvlo0007pcouw1yzoyam','delete','user','any','',1696625465533,1696625465533);
-INSERT INTO Permission VALUES('clnf2zvlp0008pcou9r0fhbm8','create','note','own','',1696625465533,1696625465533);
-INSERT INTO Permission VALUES('clnf2zvlp0009pcouj3qib9q9','create','note','any','',1696625465534,1696625465534);
-INSERT INTO Permission VALUES('clnf2zvlq000apcouxnspejs9','read','note','own','',1696625465535,1696625465535);
-INSERT INTO Permission VALUES('clnf2zvlr000bpcouf4cg3x72','read','note','any','',1696625465535,1696625465535);
-INSERT INTO Permission VALUES('clnf2zvlr000cpcouy1vp6oeg','update','note','own','',1696625465536,1696625465536);
-INSERT INTO Permission VALUES('clnf2zvls000dpcouvzwjjzrq','update','note','any','',1696625465536,1696625465536);
-INSERT INTO Permission VALUES('clnf2zvls000epcou4ts5ui8f','delete','note','own','',1696625465537,1696625465537);
-INSERT INTO Permission VALUES('clnf2zvlt000fpcouk29jbmxn','delete','note','any','',1696625465538,1696625465538);
+INSERT INTO Permission VALUES('clqabboyq0000xns7ktt3y8ol','create','user','own','',1702867469858,1702867469858);
+INSERT INTO Permission VALUES('clqabboys0001xns7filr3h4a','create','user','any','',1702867469861,1702867469861);
+INSERT INTO Permission VALUES('clqabboyv0002xns7ykhyztky','read','user','own','',1702867469863,1702867469863);
+INSERT INTO Permission VALUES('clqabboyx0003xns7t0ni5wx0','read','user','any','',1702867469866,1702867469866);
+INSERT INTO Permission VALUES('clqabboz00004xns7ftq9h2ei','update','user','own','',1702867469869,1702867469869);
+INSERT INTO Permission VALUES('clqabboz30005xns7k0tfw5xm','update','user','any','',1702867469871,1702867469871);
+INSERT INTO Permission VALUES('clqabboz70006xns7qw0wcgp7','delete','user','own','',1702867469875,1702867469875);
+INSERT INTO Permission VALUES('clqabboz90007xns7s5v2nom2','delete','user','any','',1702867469878,1702867469878);
+INSERT INTO Permission VALUES('clqabbozc0008xns7r3uf8q7a','create','plaidItem','own','',1702867469881,1702867469881);
+INSERT INTO Permission VALUES('clqabbozf0009xns7lpg56e0a','create','plaidItem','any','',1702867469884,1702867469884);
+INSERT INTO Permission VALUES('clqabbozh000axns7djmdn4vr','read','plaidItem','own','',1702867469886,1702867469886);
+INSERT INTO Permission VALUES('clqabbozk000bxns751u4eysv','read','plaidItem','any','',1702867469888,1702867469888);
+INSERT INTO Permission VALUES('clqabbozn000cxns75t8qw8d5','update','plaidItem','own','',1702867469891,1702867469891);
+INSERT INTO Permission VALUES('clqabbozp000dxns7dw0xvaak','update','plaidItem','any','',1702867469894,1702867469894);
+INSERT INTO Permission VALUES('clqabbozt000exns7024zsil2','delete','plaidItem','own','',1702867469897,1702867469897);
+INSERT INTO Permission VALUES('clqabbozw000fxns7b9wd4ac6','delete','plaidItem','any','',1702867469900,1702867469900);
 
-INSERT INTO Role VALUES('clnf2zvlw000gpcour6dyyuh6','admin','',1696625465540,1696625465540);
-INSERT INTO Role VALUES('clnf2zvlx000hpcou5dfrbegs','user','',1696625465542,1696625465542);
+INSERT INTO Role VALUES('clqabbp01000gxns7carjhesq','admin','',1702867469905,1702867469905);
+INSERT INTO Role VALUES('clqabbp07000hxns7tu8hcfkp','user','',1702867469911,1702867469911);
 
-INSERT INTO _PermissionToRole VALUES('clnf2zvll0001pcouly1310ku','clnf2zvlw000gpcour6dyyuh6');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlm0003pcouea4dee51','clnf2zvlw000gpcour6dyyuh6');
-INSERT INTO _PermissionToRole VALUES('clnf2zvln0005pcoun78ps5ap','clnf2zvlw000gpcour6dyyuh6');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlo0007pcouw1yzoyam','clnf2zvlw000gpcour6dyyuh6');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlp0009pcouj3qib9q9','clnf2zvlw000gpcour6dyyuh6');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlr000bpcouf4cg3x72','clnf2zvlw000gpcour6dyyuh6');
-INSERT INTO _PermissionToRole VALUES('clnf2zvls000dpcouvzwjjzrq','clnf2zvlw000gpcour6dyyuh6');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlt000fpcouk29jbmxn','clnf2zvlw000gpcour6dyyuh6');
-INSERT INTO _PermissionToRole VALUES('clnf2zvli0000pcou3zzzzome','clnf2zvlx000hpcou5dfrbegs');
-INSERT INTO _PermissionToRole VALUES('clnf2zvll0002pcouka7348re','clnf2zvlx000hpcou5dfrbegs');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlm0004pcou2guvolx5','clnf2zvlx000hpcou5dfrbegs');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlo0006pcouyoptc5jp','clnf2zvlx000hpcou5dfrbegs');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlp0008pcou9r0fhbm8','clnf2zvlx000hpcou5dfrbegs');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlq000apcouxnspejs9','clnf2zvlx000hpcou5dfrbegs');
-INSERT INTO _PermissionToRole VALUES('clnf2zvlr000cpcouy1vp6oeg','clnf2zvlx000hpcou5dfrbegs');
-INSERT INTO _PermissionToRole VALUES('clnf2zvls000epcou4ts5ui8f','clnf2zvlx000hpcou5dfrbegs');
+INSERT INTO _PermissionToRole VALUES('clqabboys0001xns7filr3h4a','clqabbp01000gxns7carjhesq');
+INSERT INTO _PermissionToRole VALUES('clqabboyx0003xns7t0ni5wx0','clqabbp01000gxns7carjhesq');
+INSERT INTO _PermissionToRole VALUES('clqabboz30005xns7k0tfw5xm','clqabbp01000gxns7carjhesq');
+INSERT INTO _PermissionToRole VALUES('clqabboz90007xns7s5v2nom2','clqabbp01000gxns7carjhesq');
+INSERT INTO _PermissionToRole VALUES('clqabbozf0009xns7lpg56e0a','clqabbp01000gxns7carjhesq');
+INSERT INTO _PermissionToRole VALUES('clqabbozk000bxns751u4eysv','clqabbp01000gxns7carjhesq');
+INSERT INTO _PermissionToRole VALUES('clqabbozp000dxns7dw0xvaak','clqabbp01000gxns7carjhesq');
+INSERT INTO _PermissionToRole VALUES('clqabbozw000fxns7b9wd4ac6','clqabbp01000gxns7carjhesq');
+INSERT INTO _PermissionToRole VALUES('clqabboyq0000xns7ktt3y8ol','clqabbp07000hxns7tu8hcfkp');
+INSERT INTO _PermissionToRole VALUES('clqabboyv0002xns7ykhyztky','clqabbp07000hxns7tu8hcfkp');
+INSERT INTO _PermissionToRole VALUES('clqabboz00004xns7ftq9h2ei','clqabbp07000hxns7tu8hcfkp');
+INSERT INTO _PermissionToRole VALUES('clqabboz70006xns7qw0wcgp7','clqabbp07000hxns7tu8hcfkp');
+INSERT INTO _PermissionToRole VALUES('clqabbozc0008xns7r3uf8q7a','clqabbp07000hxns7tu8hcfkp');
+INSERT INTO _PermissionToRole VALUES('clqabbozh000axns7djmdn4vr','clqabbp07000hxns7tu8hcfkp');
+INSERT INTO _PermissionToRole VALUES('clqabbozn000cxns75t8qw8d5','clqabbp07000hxns7tu8hcfkp');
+INSERT INTO _PermissionToRole VALUES('clqabbozt000exns7024zsil2','clqabbp07000hxns7tu8hcfkp');
