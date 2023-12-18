@@ -127,7 +127,7 @@ app.use(
 					MODE === 'development' ? 'ws:' : null,
 					process.env.SENTRY_DSN ? '*.ingest.sentry.io' : null,
 					"'self'",
-					`https://${process.env.PLAID_ENV ?? 'sandbox'}.plaid.com/`
+					`https://${process.env.PLAID_ENV || 'sandbox'}.plaid.com/`
 				].filter(Boolean),
 				'font-src': ["'self'"],
 				'frame-src': ["'self'", 'https://cdn.plaid.com/'],

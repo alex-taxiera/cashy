@@ -6,12 +6,14 @@ const schema = z.object({
 	DATABASE_URL: z.string(),
 	SESSION_SECRET: z.string(),
 	INTERNAL_COMMAND_TOKEN: z.string(),
-	HONEYPOT_SECRET: z.string(),
 	CACHE_DATABASE_PATH: z.string(),
-	// If you plan on using Sentry, uncomment this line
 	SENTRY_DSN: z.string(),
-	// If you plan to use Resend, uncomment this line
+	SENTRY_AUTH_TOKEN: z.string(),
+	SENTRY_ORG: z.string(),
+	SENTRY_PROJECT: z.string(),
 	RESEND_API_KEY: z.string(),
+	PLAID_CLIENT_ID: z.string(),
+	PLAID_SECRET: z.string(),
 })
 
 declare global {
