@@ -35,7 +35,7 @@ export async function loader({ request }: DataFunctionArgs) {
 		user: {
 			client_user_id: userId,
 		},
-		client_name: 'Plaid Quickstart',
+		client_name: 'Cashy',
 		products: products,
 		country_codes: countryCodes,
 		language: 'en',
