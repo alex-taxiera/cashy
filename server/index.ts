@@ -121,23 +121,21 @@ app.use(
 		referrerPolicy: { policy: 'same-origin' },
 		crossOriginEmbedderPolicy: false,
 		contentSecurityPolicy: {
-			// NOTE: Remove reportOnly when you're ready to enforce this CSP
-			reportOnly: true,
 			directives: {
-				'default-src': ["'https://cdn.plaid.com/'"],
+				'default-src': ["'self'", 'https://cdn.plaid.com/'],
 				'connect-src': [
 					MODE === 'development' ? 'ws:' : null,
 					process.env.SENTRY_DSN ? '*.ingest.sentry.io' : null,
 					"'self'",
-					`'https://${process.env.PLAID_ENV ?? 'sandbox'}.plaid.com/'`
+					`https://${process.env.PLAID_ENV ?? 'sandbox'}.plaid.com/`
 				].filter(Boolean),
 				'font-src': ["'self'"],
-				'frame-src': ["'self'", "'https://cdn.plaid.com/'"],
+				'frame-src': ["'self'", 'https://cdn.plaid.com/'],
 				'img-src': ["'self'", 'data:'],
 				'script-src': [
 					"'strict-dynamic'",
 					"'self'",
-					"'https://cdn.plaid.com/link/v2/stable/link-initialize.js'",
+					'https://cdn.plaid.com/link/v2/stable/link-initialize.js',
 					// @ts-expect-error
 					(_, res) => `'nonce-${res.locals.cspNonce}'`,
 				],
