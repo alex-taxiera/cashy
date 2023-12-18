@@ -17,7 +17,7 @@
     "*.db": "sqlite-viewer.view"
   },
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true,
+    "source.fixAll.eslint": "explicit"
   },
   "workbench.colorCustomizations": {
     "commandCenter.border": "#15202b99",

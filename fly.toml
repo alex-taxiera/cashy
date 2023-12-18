@@ -1,4 +1,4 @@
-app = "cashy-04af"
+app = "cashy"
 primary_region = "sjc"
 kill_signal = "SIGINT"
 kill_timeout = 5
