@@ -19,9 +19,9 @@ export const authenticator = new Authenticator<ProviderUser>(
 	connectionSessionStorage,
 )
 
-for (const [providerName, provider] of Object.entries(providers)) {
-	authenticator.use(provider.getAuthStrategy(), providerName)
-}
+// for (const [providerName, provider] of Object.entries(providers)) {
+// 	authenticator.use(provider.getAuthStrategy(), providerName)
+// }
 
 export async function getUserId(request: Request) {
 	const authSession = await authSessionStorage.getSession(

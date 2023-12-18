@@ -18,7 +18,7 @@ export const connectionSessionStorage = createCookieSessionStorage({
 export const providers: Record<ProviderName, AuthProvider> = {}
 
 export function handleMockAction(providerName: ProviderName, request: Request) {
-	return providers[providerName].handleMockAction(request)
+	return {} // providers[providerName].handleMockAction(request)
 }
 
 export function resolveConnectionData(
@@ -26,5 +26,5 @@ export function resolveConnectionData(
 	providerId: string,
 	options?: { timings?: Timings },
 ) {
-	return providers[providerName].resolveConnectionData(providerId, options)
+	return { displayName: 'never' } // providers[providerName].resolveConnectionData(providerId, options)
 }
